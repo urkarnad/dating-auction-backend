@@ -104,3 +104,5 @@ The goal of this project is to create a more modern, convenient and interactive 
 Each user can attach a **SoundCloud track** to their lot.  
 The track will appear as an embedded **SoundCloud player** on the lot’s page —  
 users can listen directly or open the song on SoundCloud.
+
+![ER model](images/ERmodel.png)
