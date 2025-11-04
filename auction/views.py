@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.http import Http404
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -58,5 +59,54 @@ class MyLot(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         # there will be serializer
+        return ...
+
+    def post(self, request):
+        user = request.user
+        if Lot.objects.filter(owner=user).exists():
+            return Response({"detail": "You can create only 1 lot."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # serializer
+
+        return ...
+
+    def put(self, request):
+        user = request.user
+        my_lot = Lot.objects.filter(owner=user).first()
+
+        if not my_lot:
+            return Response(
+                {"detail": "You don't have any created lot."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # serializer
+
+        return ...
+
+    def patch(self, request):
+        user = request.user
+        my_lot = Lot.objects.filter(owner=user).first()
+
+        if not my_lot:
+            return Response(
+                {"detail": "ou don't have any created lot."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class LotDetail(APIView):
+    def get_object(self, pk):
+        try:
+            return Lot.objects.all().get(pk=pk)
+        except Lot.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        lot = self.get_object(pk)
+
+        # serializer
+
         return ...
 
