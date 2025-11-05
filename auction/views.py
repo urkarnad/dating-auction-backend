@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from auction.models import Lot
+from auction.serializers import LotSerializer, BidSerializer, CommentSerializer
 
 
 class HomePage(APIView):
@@ -41,13 +42,13 @@ class HomePage(APIView):
         elif sort_param == 'price_desc':
             lots = lots.order_by('-price')
         elif sort_param == 'created_at_asc':
-            lots = lots.order_by('date')
+            lots = lots.order_by('created_at')
         elif sort_param == 'created_at_desc':
-            lots = lots.order_by('-date')
+            lots = lots.order_by('-created_at')
 
-        # there will be serializer when we merge branches
+        serializer = LotSerializer(lots, many=True)
 
-        return ...
+        return Response(serializer.data)
 
 
 class MyLot(APIView):
@@ -58,8 +59,8 @@ class MyLot(APIView):
         if not my_lot:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        # there will be serializer
-        return ...
+        serializer = LotSerializer(my_lot)
+        return Response(serializer.data)
 
     def post(self, request):
         user = request.user
@@ -67,9 +68,13 @@ class MyLot(APIView):
             return Response({"detail": "You can create only 1 lot."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # serializer
+        serializer = LotSerializer(data=request.data)
 
-        return ...
+        if serializer.is_valid():
+            serializer.save(owner=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
         user = request.user
@@ -81,9 +86,13 @@ class MyLot(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # serializer
+        serializer = LotSerializer(my_lot, data=request.data)
 
-        return ...
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):
         user = request.user
@@ -91,22 +100,86 @@ class MyLot(APIView):
 
         if not my_lot:
             return Response(
-                {"detail": "ou don't have any created lot."},
+                {"detail": "You don't have any created lot."},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        serializer = LotSerializer(my_lot, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LotDetail(APIView):
     def get_object(self, pk):
         try:
-            return Lot.objects.all().get(pk=pk)
+            return Lot.objects.get(pk=pk)
         except Lot.DoesNotExist:
             raise Http404
 
     def get(self, request, pk):
         lot = self.get_object(pk)
 
-        # serializer
+        serializer = LotSerializer(lot)
+        return Response(serializer.data)
 
-        return ...
+    def post(self, request, pk):
+        lot = self.get_object(pk)
+        user = request.user
 
+        amount = request.data.get('amount')
+        text = request.data.get('text')
+
+        if amount:
+            bid_data = {"user": user.id, "lot": lot.id, "amount": amount}
+            bid_serializer = BidSerializer(data=bid_data)
+            bid_serializer.is_valid(raise_exception=True)
+            bid = bid_serializer.save()
+
+            lot.last_bet = bid.amount
+            lot.save(update_fields=["last_bet"])
+
+            if text:
+                comment_data = {
+                    "user": user.id,
+                    "lot": lot.id,
+                    "text": text,
+                    "bid": bid.id
+                }
+                comment_serializer = CommentSerializer(data=comment_data)
+                comment_serializer.is_valid(raise_exception=True)
+                comment_serializer.save()
+            return Response(
+                {"detail": "Bid successfully placed."},
+                status=status.HTTP_201_CREATED
+            )
+
+        elif text:
+            comment_data = {"user": user.id, "lot": lot.id, "text": text}
+            comment_serializer = CommentSerializer(data=comment_data)
+            comment_serializer.is_valid(raise_exception=True)
+            comment_serializer.save()
+
+            return Response(
+                {"detail": "Comment successfully added."},
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            {"detail": "Provide at least text or amount."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def delete(self, request, pk):
+        lot = self.get_object(pk)
+
+        if not request.user.is_staff and not request.user.is_superuser:
+            return Response(
+                {"detail": "You don't have permission to delete this lot."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        lot.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
