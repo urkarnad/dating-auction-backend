@@ -8,6 +8,7 @@ from .models import (
     Role, Faculty, Major, Lot, Bid, Comment, MyBids, Themes, Complaints
 )
 
+
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
