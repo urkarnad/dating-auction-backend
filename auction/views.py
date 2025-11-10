@@ -4,8 +4,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auction.models import Lot
-from auction.serializers import LotSerializer, BidSerializer, CommentSerializer
+from auction.models import Lot, Complaints, MyBids
+from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
+from user.serializers import CustomUserSerializer
 
 
 class HomePage(APIView):
@@ -54,7 +55,7 @@ class HomePage(APIView):
 class MyLot(APIView):
     def get(self, request):
         user = request.user
-        my_lot = Lot.objects.filter(owner=user).first()
+        my_lot = Lot.objects.filter(user=user).first()
 
         if not my_lot:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -64,7 +65,7 @@ class MyLot(APIView):
 
     def post(self, request):
         user = request.user
-        if Lot.objects.filter(owner=user).exists():
+        if Lot.objects.filter(user=user).exists():
             return Response({"detail": "You can create only 1 lot."},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -183,3 +184,88 @@ class LotDetail(APIView):
             )
         lot.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class Feedback(APIView):
+    def post(self, request):
+        name = request.data.get("name")
+        email = request.data.get("email")
+        message = request.data.get("message")
+
+        return Response({"details": "Your feedback has been sent."}, status=status.HTTP_200_OK)
+
+
+class Profile(APIView):
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        serializer = CustomUserSerializer(
+            request.user,
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = CustomUserSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class Rules(APIView):
+    # temporary rules, later we will append html page
+    def get(self, request):
+        return Response({
+            "rules": [
+                "1. No cheating",
+                "2. No harassment",
+                "3. No spam"
+            ]
+        })
+
+
+class ComplaintsList(APIView):
+    def get(self, request):
+        if not request.user.is_staff or not request.user.is_superuser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        complaints = Complaints.objects.all()
+        serializer = ComplaintsSerializer(complaints, many=True)
+        return Response(serializer.data)
+
+
+class ComplaintDetail(APIView):
+    def post(self, request, pk):
+        data = {
+            "user": request.user.id,
+            "theme": pk,
+            "text": request.data.get("text")
+        }
+        serializer = ComplaintsSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class MyBids(APIView):
+    def get(self, request):
+        status_filter = request.query_params.get("status")
+
+        bids = MyBids.objects.filter(user=request.user)
+
+        if status_filter == "overbid":
+            bids = bids.filter(is_overbid=True)
+        elif status_filter == "active":
+            bids = bids.filter(is_overbid=False)
+
+        serializer = MyBidsSerializer(bids, many=True)
+        return Response(serializer.data)
