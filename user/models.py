@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
@@ -15,7 +16,7 @@ class Gender(models.Model):
         return self.gender
 
 
-class CustomUser(models.Model):
+class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     role = models.ForeignKey("auction.Role", on_delete=models.CASCADE)
