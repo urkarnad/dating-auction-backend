@@ -17,18 +17,31 @@ class Gender(models.Model):
 
 
 class CustomUser(AbstractUser):
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    # built in: username, first_name, last_name, email
     role = models.ForeignKey("auction.Role", on_delete=models.CASCADE)
     gender = models.ForeignKey(Gender, on_delete=models.CASCADE) #questions
     faculty = models.ForeignKey("auction.Faculty", on_delete=models.CASCADE)
     major = models.ForeignKey("auction.Major", on_delete=models.CASCADE, null=True, blank=True)
     year = models.ForeignKey(Year, on_delete=models.CASCADE, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    profile_pic = models.ImageField(upload_to='profile_pic', null=True, blank=True)
-    photo = models.ImageField(null=True, blank=True)
+
+    profile_pic = models.ImageField(upload_to='profile_pic/', null=True, blank=True)
+
     facebook = models.URLField(null=True, blank=True)
     instagram = models.URLField(null=True, blank=True)
     discord = models.URLField(null=True, blank=True)
     soundcloud = models.URLField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.username})"
+
+class UserPhotos(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_photos")
+    photo = models.ImageField(upload_to='photos/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Photo of {self.user.username}"
+
