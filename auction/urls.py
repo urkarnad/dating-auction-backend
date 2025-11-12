@@ -1,7 +1,6 @@
 from django.urls import path
 
 from auction import views
-
 urlpatterns = [
     path('', views.HomePage.as_view(), name='homepage'),
     path('mylot/', views.MyLot.as_view(), name='my_lot'),
