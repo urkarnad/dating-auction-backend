@@ -25,8 +25,10 @@ SECRET_KEY = 'django-insecure-2s8w&uuhc20b4+9t33uzb#a_@)(g*a!z6bq28v#@v+h%o@fv4=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
+AZUREAD_TENANT_OAUTH2_REDIRECT_URI = "http://localhost:8000/auth/complete/azuread-tenant-oauth2/"
 
 # Application definition
 
@@ -40,7 +42,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.azuread_tenant.AzureADTenantOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+# TEMPORARY!
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = 'bebebe'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = 'bebebe'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'bebebe'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
