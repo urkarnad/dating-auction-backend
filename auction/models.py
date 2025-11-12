@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
 from django.db import models
 
 from user.models import CustomUser
@@ -34,13 +34,13 @@ class Lot(models.Model):
 
 
 class Bid(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE) #who bets
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE) #who bets
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE) #on who bets
     amount = models.IntegerField(default=0)
 
 
 class Comment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True, blank=True)
     bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
@@ -49,7 +49,7 @@ class Comment(models.Model):
 
 
 class MyBids(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # who bet
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # who bet
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE)  # on who bet
     bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
 
@@ -62,6 +62,6 @@ class Themes(models.Model):
 
 
 class Complaints(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     theme = models.ForeignKey(Themes, on_delete=models.CASCADE)
     text = models.TextField(null=True, blank=True)
