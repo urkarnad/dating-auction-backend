@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 
 from auction.models import Lot, Complaints, MyBids
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
-from user.models import CustomUser
 from user.serializers import CustomUserSerializer
+from user.models import CustomUser
 
 
 class HomePage(APIView):
