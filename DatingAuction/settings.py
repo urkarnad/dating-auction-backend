@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'auction',
     'user',
+    'discord_bot',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

@@ -1,11 +1,13 @@
 from django.db.models import Q
 from django.http import Http404
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from auction.models import Lot, Complaints, MyBids
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
+from user.models import CustomUser
 from user.serializers import CustomUserSerializer
 
 
@@ -269,3 +271,17 @@ class MyBids(APIView):
 
         serializer = MyBidsSerializer(bids, many=True)
         return Response(serializer.data)
+
+    # test function for discord
+    @api_view(['POST'])
+    def link_discord(request):
+        email = request.data.get('email')
+        discord_id = request.data.get('discord')
+
+        try:
+            user = CustomUser.objects.get(email=email)
+            user.discord_id = discord_id
+            user.save()
+            return Response({"status": "ok"})
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
