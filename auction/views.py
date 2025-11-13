@@ -272,16 +272,17 @@ class MyBids(APIView):
         serializer = MyBidsSerializer(bids, many=True)
         return Response(serializer.data)
 
-    # test function for discord
-    @api_view(['POST'])
-    def link_discord(request):
-        email = request.data.get('email')
-        discord_id = request.data.get('discord')
 
-        try:
-            user = CustomUser.objects.get(email=email)
-            user.discord_id = discord_id
-            user.save()
-            return Response({"status": "ok"})
-        except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+# test function for discord
+@api_view(['POST'])
+def link_discord(request):
+    email = request.data.get('email')
+    discord_id = request.data.get('discord')
+
+    try:
+        user = CustomUser.objects.get(email=email)
+        user.discord_id = discord_id
+        user.save()
+        return Response({"status": "ok"})
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
