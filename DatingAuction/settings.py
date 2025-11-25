@@ -23,10 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-2s8w&uuhc20b4+9t33uzb#a_@)(g*a!z6bq28v#@v+h%o@fv4='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_REDIRECT_URI = "http://localhost:8000/auth/complete/azuread-tenant-oauth2/"
+#http://localhost:8000/auth/login/azuread-tenant-oauth2/
 
 # Application definition
 
@@ -40,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -65,10 +69,27 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                #'microsoft_auth.context_processors.microsoft',
             ],
         },
     },
 ]
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.azuread_tenant.AzureADTenantOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = 'token'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = 'token'
+# Tenant ID for single tenant applications
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'token'
+
+#MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
+#MICROSOFT_AUTH_AUTO_CREATE = True
 
 WSGI_APPLICATION = 'DatingAuction.wsgi.application'
 

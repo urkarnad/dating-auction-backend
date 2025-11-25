@@ -20,4 +20,6 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('auction.urls')),
+    path('', include('user.urls')),
+    #path('microsoft/', include('microsoft_auth.urls', namespace='microsoft')),
 ]
