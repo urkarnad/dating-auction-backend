@@ -3,11 +3,16 @@ from django.http import Http404
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from auction.models import Lot, Complaints, MyBids
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
 from user.serializers import CustomUserSerializer
 
+class LotPagination(PageNumberPagination):
+    page_size = 10                       
+    page_size_query_param = "page_size"  
+    max_page_size = 100  
 
 class HomePage(APIView):
     def get(self, request):
@@ -47,9 +52,11 @@ class HomePage(APIView):
         elif sort_param == 'created_at_desc':
             lots = lots.order_by('-created_at')
 
-        serializer = LotSerializer(lots, many=True)
+        paginator = LotPagination()
+        page_qs = paginator.paginate_queryset(lots, request, view=self)
 
-        return Response(serializer.data)
+        serializer = LotSerializer(page_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class MyLot(APIView):
