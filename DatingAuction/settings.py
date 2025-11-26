@@ -34,7 +34,7 @@ SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_REDIRECT_URI = "http://localhost:8000/auth/com
 # Application definition
 
 INSTALLED_APPS = [
-    'corsheaders',
+    'drf_spectacular',
     'auction',
     'user',
     'rest_framework',
@@ -46,6 +46,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'social_django',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
