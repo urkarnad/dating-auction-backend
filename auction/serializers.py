@@ -56,9 +56,11 @@ class ComplaintsSerializer(serializers.ModelSerializer):
 
 
 class LotSerializer(serializers.ModelSerializer):
+    soundcloud = serializers.URLField(source='user.soundcloud', read_only=True)
+
     class Meta:
         model = Lot
-        fields = ["id", "user", "created_at", "description", "last_bet"]
+        fields = ["id", "user", "created_at", "description", "last_bet", "soundcloud"]
         read_only_fields = ["created_at"]
         extra_kwargs = {
             "last_bet": {"min_value": 0},
