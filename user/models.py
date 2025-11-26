@@ -18,9 +18,9 @@ class Gender(models.Model):
 
 class CustomUser(AbstractUser):
     # built in: username, first_name, last_name, email
-    role = models.ForeignKey("auction.Role", on_delete=models.CASCADE)
-    gender = models.ForeignKey(Gender, on_delete=models.CASCADE) #questions
-    faculty = models.ForeignKey("auction.Faculty", on_delete=models.CASCADE)
+    role = models.ForeignKey("auction.Role", on_delete=models.CASCADE, null=True, blank=True)
+    gender = models.ForeignKey(Gender, on_delete=models.CASCADE, null=True, blank=True)    # questions
+    faculty = models.ForeignKey("auction.Faculty", on_delete=models.CASCADE, null=True, blank=True)
     major = models.ForeignKey("auction.Major", on_delete=models.CASCADE, null=True, blank=True)
     year = models.ForeignKey(Year, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -31,11 +31,12 @@ class CustomUser(AbstractUser):
 
     facebook = models.URLField(null=True, blank=True)
     instagram = models.URLField(null=True, blank=True)
-    discord = models.URLField(null=True, blank=True)
+    discord_id = models.CharField(null=True, blank=True)
     soundcloud = models.URLField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.username})"
+
 
 class UserPhotos(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_photos")
