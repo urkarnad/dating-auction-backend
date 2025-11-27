@@ -1,11 +1,12 @@
 from django.db.models import Q
 from django.http import Http404
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from auction.models import Lot, Complaints, MyBids, Faculty, Major, Role
+from auction.models import Lot, Complaints, Faculty, Major, Role, Bid
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer, \
     FacultySerializer, MajorSerializer, RoleSerializer
 from user.serializers import CustomUserSerializer
@@ -206,6 +207,8 @@ class Feedback(APIView):
 
 
 class Profile(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data)
@@ -270,7 +273,7 @@ class MyBids(APIView):
     def get(self, request):
         status_filter = request.query_params.get("status")
 
-        bids = MyBids.objects.filter(user=request.user)
+        bids = Bid.objects.filter(user=request.user)
 
         if status_filter == "overbid":
             bids = bids.filter(is_overbid=True)

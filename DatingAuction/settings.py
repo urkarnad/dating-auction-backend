@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-2s8w&uuhc20b4+9t33uzb#a_@)(g*a!z6bq28v#@v+h%o@fv4=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+FRONTEND_URL = 'http://localhost:3000'
+
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
@@ -49,6 +51,13 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 MIDDLEWARE = [
@@ -81,7 +90,8 @@ TEMPLATES = [
     },
 ]
 
-LOGIN_REDIRECT_URL = '/'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/auth/success/'
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/auth/success/'
 LOGOUT_REDIRECT_URL = '/'
 
 AUTHENTICATION_BACKENDS = [
@@ -93,6 +103,8 @@ SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = 'bebebe'
 SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = 'bebebe'
 # Tenant ID for single tenant applications
 SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'poland'
+
+
 
 #MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
 #MICROSOFT_AUTH_AUTO_CREATE = True
@@ -157,3 +169,19 @@ AUTH_USER_MODEL = "user.CustomUser"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
