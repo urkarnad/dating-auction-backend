@@ -1,18 +1,22 @@
 from django.db.models import Q
 from django.http import Http404
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from auction.models import Lot, Complaints, MyBids
-from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
+from auction.models import Lot, Complaints, Faculty, Major, Role, Bid
+from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer, \
+    FacultySerializer, MajorSerializer, RoleSerializer
 from user.serializers import CustomUserSerializer
+
 
 class LotPagination(PageNumberPagination):
     page_size = 10                       
     page_size_query_param = "page_size"  
     max_page_size = 100  
+
 
 class HomePage(APIView):
     def get(self, request):
@@ -203,6 +207,8 @@ class Feedback(APIView):
 
 
 class Profile(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data)
@@ -267,7 +273,7 @@ class MyBids(APIView):
     def get(self, request):
         status_filter = request.query_params.get("status")
 
-        bids = MyBids.objects.filter(user=request.user)
+        bids = Bid.objects.filter(user=request.user)
 
         if status_filter == "overbid":
             bids = bids.filter(is_overbid=True)
@@ -275,4 +281,51 @@ class MyBids(APIView):
             bids = bids.filter(is_overbid=False)
 
         serializer = MyBidsSerializer(bids, many=True)
+        return Response(serializer.data)
+
+
+class FacultyList(APIView):
+    def get(self, request):
+        faculties = Faculty.objects.all()
+        serializer = FacultySerializer(faculties, many=True)
+        return Response(serializer.data)
+
+
+class MajorList(APIView):
+    def get(self, request):
+        faculty_id = request.query_params.get('faculty')
+
+        if faculty_id:
+            majors = Major.objects.filter(faculty_id=faculty_id)
+        else:
+            majors = Major.objects.all()
+
+        serializer = MajorSerializer(majors, many=True)
+        return Response(serializer.data)
+
+
+class RoleList(APIView):
+    def get(self, request):
+        roles = Role.objects.all()
+        serializer = RoleSerializer(roles, many=True)
+        return Response(serializer.data)
+
+
+class YearList(APIView):
+    def get(self, request):
+        from user.models import Year
+        from user.serializers import YearSerializer
+
+        years = Year.objects.all()
+        serializer = YearSerializer(years, many=True)
+        return Response(serializer.data)
+
+
+class GenderList(APIView):
+    def get(self, request):
+        from user.models import Gender
+        from user.serializers import GenderSerializer
+
+        genders = Gender.objects.all()
+        serializer = GenderSerializer(genders, many=True)
         return Response(serializer.data)

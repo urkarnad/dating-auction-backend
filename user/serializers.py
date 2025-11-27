@@ -29,8 +29,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "first_name", "last_name",
             "role", "gender", "faculty", "major", "year",
             "created_at", "updated_at",
-            "profile_pic", "photo",
-            "facebook", "instagram", "discord", "soundcloud",
+            "profile_pic",
+            "facebook", "instagram", "discord_id", "soundcloud",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
