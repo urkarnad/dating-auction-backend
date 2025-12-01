@@ -37,6 +37,7 @@ class Bid(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE) #who bets
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE) #on who bets
     amount = models.IntegerField(default=0)
+    is_outbid = models.BooleanField(default=False)
 
 
 class Comment(models.Model):
