@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2s8w&uuhc20b4+9t33uzb#a_@)(g*a!z6bq28v#@v+h%o@fv4='
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -99,10 +104,10 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = 'bebebe'
-SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = 'bebebe'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = os.getenv('AZURE_CLIENT_ID')
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 # Tenant ID for single tenant applications
-SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'poland'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = os.getenv('AZURE_TENANT_ID')
 
 
 
