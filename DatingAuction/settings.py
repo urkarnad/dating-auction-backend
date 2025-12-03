@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -92,7 +92,7 @@ AUTHENTICATION_BACKENDS = [
 SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_KEY = 'bebebe'
 SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = 'bebebe'
 # Tenant ID for single tenant applications
-SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'poland'
+SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = 'bebebe'
 
 #MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
 #MICROSOFT_AUTH_AUTO_CREATE = True
@@ -157,3 +157,5 @@ AUTH_USER_MODEL = "user.CustomUser"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
+DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')

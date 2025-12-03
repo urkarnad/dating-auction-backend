@@ -5,14 +5,26 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from auction.models import Lot, Complaints, MyBids
+from auction.models import Lot, Complaints, MyBids, Bid
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer
 from user.serializers import CustomUserSerializer
+import requests
+
+
+def notify_discord(discord_id, message):
+    try:
+        r = requests.post(
+            "http://localhost:5005/notify",
+            json={"discord_id": discord_id, "message": message}
+        )
+        return r.status_code == 200
+    except Exception:
+        return False
 
 class LotPagination(PageNumberPagination):
     page_size = 10                       
     page_size_query_param = "page_size"  
-    max_page_size = 100  
+    max_page_size = 100
 
 class HomePage(APIView):
     def get(self, request):
@@ -141,14 +153,32 @@ class LotDetail(APIView):
         amount = request.data.get('amount')
         text = request.data.get('text')
 
+        previous_bid = Bid.objects.filter(lot=lot).order_by('-amount').first()
+
         if amount:
             bid_data = {"user": user.id, "lot": lot.id, "amount": amount}
             bid_serializer = BidSerializer(data=bid_data)
             bid_serializer.is_valid(raise_exception=True)
             bid = bid_serializer.save()
 
+            bid.is_outbid = False
+            bid.save(update_fields=['is_outbid'])
+
+
             lot.last_bet = bid.amount
             lot.save(update_fields=["last_bet"])
+
+            # For discord bot implementation
+            if previous_bid and previous_bid.amount < int(amount):
+                previous_bid.is_outbid = True
+                previous_bid.save(update_fields=['is_outbid'])
+
+                old_user = previous_bid.user
+                if old_user.discord_id:
+                    notify_discord(
+                        discord_id=old_user.discord_id,
+                        message=f"Your bid on {lot.user.first_name} {lot.user.last_name} is outbid! New bid: {bid.amount}"
+                    )
 
             if text:
                 comment_data = {
