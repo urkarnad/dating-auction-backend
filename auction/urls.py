@@ -1,6 +1,7 @@
 from django.urls import path
 
 from auction import views
+
 urlpatterns = [
     path('', views.HomePage.as_view(), name='homepage'),
     path('mylot/', views.MyLot.as_view(), name='my_lot'),
@@ -11,4 +12,9 @@ urlpatterns = [
     path('complaints/', views.ComplaintsList.as_view(), name='complaints'),
     path('complaints/<int:pk>/', views.ComplaintDetail.as_view(), name='complaint'),
     path('mybids/', views.MyBids.as_view(), name='my_bids'),
+    path('faculties/', views.FacultyList.as_view(), name='faculty-list'),
+    path('majors/', views.MajorList.as_view(), name='major-list'),
+    path('roles/', views.RoleList.as_view(), name='role-list'),
+    path('years/', views.YearList.as_view(), name='year-list'),
+    path('genders/', views.GenderList.as_view(), name='gender-list'),
 ]
