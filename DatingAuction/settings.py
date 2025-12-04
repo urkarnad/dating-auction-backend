@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary',
+    'cloudinary_storage',
     'django.contrib.staticfiles',
     'social_django',
     'corsheaders'
@@ -110,7 +112,15 @@ SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 # Tenant ID for single tenant applications
 SOCIAL_AUTH_AZUREAD_TENANT_OAUTH2_TENANT_ID = os.getenv('AZURE_TENANT_ID')
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
 
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+MEDIA_URL = '/media/'
 
 #MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
 #MICROSOFT_AUTH_AUTO_CREATE = True
