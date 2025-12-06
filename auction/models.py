@@ -34,18 +34,26 @@ class Lot(models.Model):
 
 
 class Bid(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE) #who bets
-    lot = models.ForeignKey(Lot, on_delete=models.CASCADE) #on who bets
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE)
     amount = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_overbid = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class Comment(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True, blank=True)
-    bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
+    bid = models.ForeignKey(Bid, on_delete=models.CASCADE, null=True, blank=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['created_at']
 
 
 class MyBids(models.Model):

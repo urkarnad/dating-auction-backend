@@ -5,6 +5,7 @@ from auction import views
 urlpatterns = [
     path('', views.HomePage.as_view(), name='homepage'),
     path('mylot/', views.MyLot.as_view(), name='my_lot'),
+    path('mylot/upload-photo/', views.UploadLotPhoto.as_view(), name='upload_lot_photo'),
     path('lots/<int:pk>/', views.LotDetail.as_view(), name='lot_detail'),
     path('contacts/', views.Feedback.as_view(), name='feedback'),
     path('profile/', views.Profile.as_view(), name='profile'),

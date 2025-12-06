@@ -8,7 +8,8 @@ from rest_framework.pagination import PageNumberPagination
 
 from auction.models import Lot, Complaints, Faculty, Major, Role, Bid
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer, \
-    FacultySerializer, MajorSerializer, RoleSerializer
+    FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
+from user.models import UserPhotos
 from user.serializers import CustomUserSerializer
 
 
@@ -25,8 +26,8 @@ class HomePage(APIView):
         search_query = request.query_params.get('search')
         if search_query:
             lots = lots.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query)
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query)
             )
 
         faculty = request.query_params.get('faculty')
@@ -36,21 +37,21 @@ class HomePage(APIView):
         role = request.query_params.get('role')
 
         if faculty:
-            lots = lots.filter(faculty=faculty)
+            lots = lots.filter(user__faculty_id=faculty)
         if gender:
-            lots = lots.filter(gender=gender)
+            lots = lots.filter(user__gender=gender)
         if year:
-            lots = lots.filter(year=year)
+            lots = lots.filter(user__year=year)
         if role:
-            lots = lots.filter(role=role)
+            lots = lots.filter(user__role=role)
         if has_photo == 'true':
-            lots = lots.exclude(photo='')
+            lots = lots.exclude(user__photo='')
 
         sort_param = request.query_params.get('sort')
         if sort_param == 'price_asc':
-            lots = lots.order_by('price')
+            lots = lots.order_by('last_bet')
         elif sort_param == 'price_desc':
-            lots = lots.order_by('-price')
+            lots = lots.order_by('-last_bet')
         elif sort_param == 'created_at_asc':
             lots = lots.order_by('created_at')
         elif sort_param == 'created_at_desc':
@@ -77,52 +78,83 @@ class MyLot(APIView):
     def post(self, request):
         user = request.user
         if Lot.objects.filter(user=user).exists():
-            return Response({"detail": "You can create only 1 lot."},
+            return Response({"detail": "ви можете створити лише 1 лот."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = LotSerializer(data=request.data)
+        serializer = MyLotSerializer(data=request.data, context={'user': user})
 
         if serializer.is_valid():
-            serializer.save(owner=user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            lot = serializer.save()
+            return Response(MyLotSerializer(lot).data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
         user = request.user
-        my_lot = Lot.objects.filter(owner=user).first()
+        my_lot = Lot.objects.filter(user=user).first()
 
         if not my_lot:
             return Response(
-                {"detail": "You don't have any created lot."},
+                {"detail": "ви ще не створювали лот."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = LotSerializer(my_lot, data=request.data)
+        serializer = MyLotSerializer(my_lot, data=request.data, context={'user': user})
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            lot = serializer.save()
+            return Response(MyLotSerializer(lot).data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):
         user = request.user
-        my_lot = Lot.objects.filter(owner=user).first()
+        my_lot = Lot.objects.filter(user=user).first()
 
         if not my_lot:
             return Response(
-                {"detail": "You don't have any created lot."},
+                {"detail": "ви ще не створювали лот."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = LotSerializer(my_lot, data=request.data, partial=True)
+        serializer = MyLotSerializer(my_lot, data=request.data, partial=True, context={'user': user})
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            lot = serializer.save()
+            return Response(MyLotSerializer(lot).data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UploadLotPhoto(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        my_lot = Lot.objects.filter(user=user).first()
+
+        if not my_lot:
+            return Response(
+                {"detail": "спочатку створіть лот."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        photo = request.FILES.get('photo')
+        if not photo:
+            return Response(
+                {"detail": "фото не надано."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user_photo = UserPhotos.objects.create(user=user, photo=photo)
+
+        return Response(
+            {
+                "detail": "фото успішно завантажено.",
+                "photo_url": request.build_absolute_uri(user_photo.photo.url)
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 class LotDetail(APIView):
@@ -134,7 +166,6 @@ class LotDetail(APIView):
 
     def get(self, request, pk):
         lot = self.get_object(pk)
-
         serializer = LotSerializer(lot)
         return Response(serializer.data)
 
@@ -165,7 +196,7 @@ class LotDetail(APIView):
                 comment_serializer.is_valid(raise_exception=True)
                 comment_serializer.save()
             return Response(
-                {"detail": "Bid successfully placed."},
+                {"detail": "ставку успішно додано."},
                 status=status.HTTP_201_CREATED
             )
 
@@ -176,12 +207,12 @@ class LotDetail(APIView):
             comment_serializer.save()
 
             return Response(
-                {"detail": "Comment successfully added."},
+                {"detail": "коментар успішно доданий."},
                 status=status.HTTP_201_CREATED
             )
 
         return Response(
-            {"detail": "Provide at least text or amount."},
+            {"detail": "напишіть текст або кількість."},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -190,7 +221,7 @@ class LotDetail(APIView):
 
         if not request.user.is_staff and not request.user.is_superuser:
             return Response(
-                {"detail": "You don't have permission to delete this lot."},
+                {"detail": "у вас немає дозволу на видалення лоту."},
                 status=status.HTTP_403_FORBIDDEN
             )
         lot.delete()
