@@ -31,6 +31,16 @@ class Lot(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     description = models.TextField(null=True, blank=True)
     last_bet = models.IntegerField(default=0)
+    display_first_name = models.CharField(max_length=150, blank=True)
+    display_last_name = models.CharField(max_length=150, blank=True)
+
+    @property
+    def first_name(self):
+        return self.display_first_name or self.user.first_name
+
+    @property
+    def last_name(self):
+        return self.display_last_name or self.user.last_name
 
 
 class Bid(models.Model):

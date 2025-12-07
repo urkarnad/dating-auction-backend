@@ -56,8 +56,9 @@ class ComplaintsSerializer(serializers.ModelSerializer):
 
 
 class LotSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    first_name = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+
     faculty = serializers.CharField(source='user.faculty.name', read_only=True)
     major = serializers.CharField(source='user.major.name', read_only=True, allow_null=True)
     year = serializers.CharField(source='user.year.year', read_only=True)
@@ -66,9 +67,7 @@ class LotSerializer(serializers.ModelSerializer):
     soundcloud_url = serializers.URLField(source='user.soundcloud', read_only=True, allow_null=True)
 
     photos = serializers.SerializerMethodField()
-
     comments = serializers.SerializerMethodField()
-
     lot_number = serializers.IntegerField(source='id', read_only=True)
 
     class Meta:
@@ -79,6 +78,12 @@ class LotSerializer(serializers.ModelSerializer):
             "role", "soundcloud_url", "photos", "comments"
         ]
         read_only_fields = ["created_at", "user"]
+
+    def get_first_name(self, obj):
+        return obj.first_name
+
+    def get_last_name(self, obj):
+        return obj.last_name
 
     def get_photos(self, obj):
         request = self.context.get('request')
@@ -133,6 +138,23 @@ class MyLotSerializer(serializers.Serializer):
     soundcloud_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
     description = serializers.CharField(allow_blank=True, required=False)
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        representation['faculty'] = instance.user.faculty_id if instance.user.faculty else None
+        representation['major'] = instance.user.major_id if instance.user.major else None
+        representation['year'] = instance.user.year_id if instance.user.year else None
+        representation['gender'] = instance.user.gender_id if instance.user.gender else None
+        representation['role'] = instance.user.role_id if instance.user.role else None
+
+        representation['first_name'] = instance.first_name
+        representation['last_name'] = instance.last_name
+
+        representation['soundcloud_url'] = instance.user.soundcloud
+        representation['description'] = instance.description
+
+        return representation
+
     def get_photos(self, obj):
         request = self.context.get('request')
         photos = UserPhotos.objects.filter(user=obj.user)
@@ -158,9 +180,10 @@ class MyLotSerializer(serializers.Serializer):
     def create(self, validated_data):
         user = self.context['user']
 
+        display_first_name = validated_data.pop('first_name', '')
+        display_last_name = validated_data.pop('last_name', '')
+
         user_fields = {
-            'first_name': validated_data.pop('first_name', user.first_name),
-            'last_name': validated_data.pop('last_name', user.last_name),
             'faculty': validated_data.pop('faculty', user.faculty),
             'major': validated_data.pop('major', user.major),
             'year': validated_data.pop('year', user.year),
@@ -177,13 +200,24 @@ class MyLotSerializer(serializers.Serializer):
                 setattr(user, field, value)
         user.save()
 
-        lot = Lot.objects.create(user=user, **validated_data)
+        lot = Lot.objects.create(
+            user=user,
+            display_first_name=display_first_name,
+            display_last_name=display_last_name,
+            **validated_data  # description, etc.
+        )
 
         return lot
 
     def update(self, lot, validated_data):
+        if 'first_name' in validated_data:
+            lot.display_first_name = validated_data.pop('first_name')
+
+        if 'last_name' in validated_data:
+            lot.display_last_name = validated_data.pop('last_name')
+
         user = lot.user
-        user_fields = ['first_name', 'last_name', 'faculty', 'major', 'year', 'gender', 'role']
+        user_fields = ['faculty', 'major', 'year', 'gender', 'role']
 
         for field in user_fields:
             if field in validated_data:
@@ -227,8 +261,8 @@ class BidSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    ANTI_SPAM_MAX = 5         # allowed comments per window
-    ANTI_SPAM_WINDOW_MIN = 1  # window in minutes
+    ANTI_SPAM_MAX = 5
+    ANTI_SPAM_WINDOW_MIN = 1
 
     class Meta:
         model = Comment
@@ -249,15 +283,12 @@ class CommentSerializer(serializers.ModelSerializer):
         if not text and not bid:
             raise serializers.ValidationError("Either 'text' or 'bid' must be provided.")
 
-        # bid must belong to the same lot
         if bid and lot and bid.lot_id != lot.id:
             raise serializers.ValidationError("Selected bid does not belong to the provided lot.")
 
-        # parent must belong to the same lot
         if parent and lot and parent.lot_id != lot.id:
             raise serializers.ValidationError("Parent comment must belong to the same lot.")
 
-        # anti-spam window
         if user:
             window_start = timezone.now() - timedelta(minutes=self.ANTI_SPAM_WINDOW_MIN)
             recent_count = Comment.objects.filter(
