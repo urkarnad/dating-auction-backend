@@ -6,7 +6,7 @@ from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from user.models import Year, Gender, UserPhotos
 from .models import (
-    Role, Faculty, Major, Lot, Bid, Comment, MyBids, Themes, Complaints
+    Role, Faculty, Major, Lot, Bid, Comment, Themes, Complaints
 )
 
 
@@ -301,24 +301,4 @@ class CommentSerializer(serializers.ModelSerializer):
                     f"{self.ANTI_SPAM_WINDOW_MIN} minute(s)."
                 )
 
-        return attrs
-
-
-class MyBidsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MyBids
-        fields = ["id", "user", "lot", "bid"]
-        validators = [
-            UniqueTogetherValidator(
-                queryset=MyBids.objects.all(),
-                fields=("user", "lot"),
-                message="This user already has a bid record for this lot."
-            )
-        ]
-
-    def validate(self, attrs):
-        lot = attrs.get("lot") or getattr(self.instance, "lot", None)
-        bid = attrs.get("bid") or getattr(self.instance, "bid", None)
-        if bid and lot and bid.lot_id != lot.id:
-            raise serializers.ValidationError("The selected bid must belong to the same lot.")
         return attrs

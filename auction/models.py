@@ -1,4 +1,3 @@
-#from django.contrib.auth.models import User
 from django.db import models
 
 from user.models import CustomUser
@@ -64,12 +63,6 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['created_at']
-
-
-class MyBids(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # who bet
-    lot = models.ForeignKey(Lot, on_delete=models.CASCADE)  # on who bet
-    bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
 
 
 class Themes(models.Model):

@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
 from auction.models import Lot, Complaints, Faculty, Major, Role, Bid
-from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, MyBidsSerializer, \
+from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, \
     FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
 from user.models import UserPhotos
 from user.serializers import CustomUserSerializer
@@ -182,6 +182,8 @@ class LotDetail(APIView):
             bid_serializer.is_valid(raise_exception=True)
             bid = bid_serializer.save()
 
+            Bid.objects.filter(lot=lot, is_overbid=False).exclude(id=bid.id).update(is_overbid=True)
+
             lot.last_bet = bid.amount
             lot.save(update_fields=["last_bet"])
 
@@ -301,18 +303,36 @@ class ComplaintDetail(APIView):
 
 
 class MyBids(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         status_filter = request.query_params.get("status")
 
-        bids = Bid.objects.filter(user=request.user)
+        bids = Bid.objects.filter(user=request.user).select_related('lot', 'lot__user')
 
         if status_filter == "overbid":
             bids = bids.filter(is_overbid=True)
         elif status_filter == "active":
             bids = bids.filter(is_overbid=False)
 
-        serializer = MyBidsSerializer(bids, many=True)
-        return Response(serializer.data)
+        data = []
+        for bid in bids:
+            data.append({
+                'id': bid.id,
+                'amount': bid.amount,
+                'created_at': bid.created_at,
+                'is_overbid': bid.is_overbid,
+                'lot': bid.lot.id,
+                'lot_info': {
+                    'id': bid.lot.id,
+                    'lot_number': bid.lot.id,
+                    'first_name': bid.lot.first_name,
+                    'last_name': bid.lot.last_name,
+                    'current_bet': bid.lot.last_bet,
+                }
+            })
+
+        return Response(data)
 
 
 class FacultyList(APIView):
