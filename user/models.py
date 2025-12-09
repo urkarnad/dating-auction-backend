@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from cloudinary_storage.storage import MediaCloudinaryStorage
+
 
 
 class Year(models.Model):
@@ -40,7 +42,7 @@ class CustomUser(AbstractUser):
 
 class UserPhotos(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_photos")
-    photo = models.ImageField(upload_to='photos/', null=True, blank=True)
+    photo = models.ImageField(storage=MediaCloudinaryStorage(), upload_to='photos/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
