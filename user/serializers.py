@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 from .models import Year, Gender, CustomUser
 from auction.models import Role, Faculty, Major
@@ -53,4 +54,52 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         if major and faculty and major.faculty_id != faculty.id:
             raise serializers.ValidationError("Selected major does not belong to the chosen faculty.")
+        return attrs
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    confirm_password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'first_name', 'last_name', 'password', 'confirm_password']
+
+    def validate_email(self, value):
+        if not value.endswith("@ukma.edu.ua"):
+            raise serializers.ValidationError("На жаль, реєстрація можлива лише через корпоративну пошту НаУКМА.")
+
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError('Користувач з цією поштою вже зареєстрований!')
+        return value
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError('Паролі не збігаються!')
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        password = validated_data.pop('password')
+        user, created = CustomUser.objects.get_or_create(email=validated_data['email'],
+                                                         defaults={
+                                                             'first_name': validated_data['first_name'],
+                                                             'last_name': validated_data['last_name'],
+                                                             'email': validated_data['email'],
+                                                         })
+        user.set_password(password)
+        user.save()
+        return user
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+
+    def validate(self, attrs):
+        user = authenticate(email=attrs['email'], password=attrs['password'])
+        if not user:
+            raise serializers.ValidationError('Дані некоректні!')
+        attrs['user'] = user
         return attrs
