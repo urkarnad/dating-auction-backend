@@ -99,7 +99,8 @@ class LotSerializer(serializers.ModelSerializer):
             'user_name': f"{c.user.first_name} {c.user.last_name}",
             'text': c.text,
             'bid': c.bid.amount if c.bid else None,
-            'created_at': c.created_at
+            'created_at': c.created_at,
+            'parent': c.parent_id
         } for c in comments]
 
 
