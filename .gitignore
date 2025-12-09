@@ -142,3 +142,10 @@ GitHub.sublime-settings
 
 # macOS
 .DS_Store
+
+# Ignore user uploads
+photos/
+media/
+*.jpg
+*.jpeg
+*.png
