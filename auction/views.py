@@ -11,6 +11,14 @@ from auction.serializers import LotSerializer, BidSerializer, CommentSerializer,
     FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
 from user.models import UserPhotos
 from user.serializers import CustomUserSerializer
+from user.permissions import NotBanned
+
+
+class NotBannedMixin:
+    def get_permissions(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            return [IsAuthenticated(), NotBanned()]
+        return [IsAuthenticated()]
 
 
 class LotPagination(PageNumberPagination):
@@ -64,7 +72,7 @@ class HomePage(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
-class MyLot(APIView):
+class MyLot(NotBannedMixin, APIView):
     def get(self, request):
         user = request.user
         my_lot = Lot.objects.filter(user=user).first()
@@ -126,8 +134,8 @@ class MyLot(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UploadLotPhoto(APIView):
-    permission_classes = [IsAuthenticated]
+class UploadLotPhoto(NotBannedMixin, APIView):
+    # permission_classes = [IsAuthenticated], це перекриває Mixin
 
     def post(self, request):
         user = request.user
@@ -157,7 +165,7 @@ class UploadLotPhoto(APIView):
         )
 
 
-class LotDetail(APIView):
+class LotDetail(NotBannedMixin, APIView):
     def get_object(self, pk):
         try:
             return Lot.objects.get(pk=pk)
@@ -230,7 +238,7 @@ class LotDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class Feedback(APIView):
+class Feedback(NotBannedMixin, APIView):
     def post(self, request):
         name = request.data.get("name")
         email = request.data.get("email")
@@ -239,8 +247,8 @@ class Feedback(APIView):
         return Response({"details": "Your feedback has been sent."}, status=status.HTTP_200_OK)
 
 
-class Profile(APIView):
-    permission_classes = [IsAuthenticated]
+class Profile(NotBannedMixin, APIView):
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
@@ -288,7 +296,7 @@ class ComplaintsList(APIView):
         return Response(serializer.data)
 
 
-class ComplaintDetail(APIView):
+class ComplaintDetail(NotBannedMixin, APIView):
     def post(self, request, pk):
         data = {
             "user": request.user.id,
@@ -302,8 +310,8 @@ class ComplaintDetail(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class MyBids(APIView):
-    permission_classes = [IsAuthenticated]
+class MyBids(NotBannedMixin, APIView):
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         status_filter = request.query_params.get("status")
