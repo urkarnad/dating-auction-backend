@@ -61,6 +61,8 @@ class CustomUser(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    is_banned = models.BooleanField(default=False)
+
     profile_pic = models.ImageField(upload_to='profile_pic/', null=True, blank=True)
 
     facebook = models.URLField(null=True, blank=True)
@@ -69,7 +71,7 @@ class CustomUser(AbstractUser):
     soundcloud = models.URLField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.username})"
+        return f"{self.first_name} {self.last_name}"
 
 
 class UserPhotos(models.Model):
