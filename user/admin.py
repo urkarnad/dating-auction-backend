@@ -9,9 +9,6 @@ class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'first_name', 'last_name', 'email', 'is_staff',)
     list_filter = ('is_banned', 'is_staff')
     search_fields = ('email', 'first_name', 'last_name')
-    fields = (
-        'email',
-        'first_name', 'last_name',
-        'is_banned',
-        'is_staff', 'is_superuser',
+    fieldsets = UserAdmin.fieldsets + (
+        ("Moderation", {"fields": ("is_banned",)}),
     )
