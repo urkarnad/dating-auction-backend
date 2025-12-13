@@ -65,6 +65,8 @@ class LotSerializer(serializers.ModelSerializer):
     gender = serializers.CharField(source='user.gender.gender', read_only=True)
     role = serializers.CharField(source='user.role.name', read_only=True, allow_null=True)
     soundcloud_url = serializers.URLField(source='user.soundcloud', read_only=True, allow_null=True)
+    facebook_url = serializers.URLField(source='user.facebook', read_only=True, allow_null=True)
+    instagram_url = serializers.URLField(source='user.instagram', read_only=True, allow_null=True)
 
     photos = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
@@ -75,7 +77,7 @@ class LotSerializer(serializers.ModelSerializer):
         fields = [
             "id", "lot_number", "user", "created_at", "description", "last_bet",
             "first_name", "last_name", "faculty", "major", "year", "gender",
-            "role", "soundcloud_url", "photos", "comments"
+            "role", "soundcloud_url", "facebook_url", "instagram_url", "photos", "comments"
         ]
         read_only_fields = ["created_at", "user"]
 
@@ -99,7 +101,8 @@ class LotSerializer(serializers.ModelSerializer):
             'user_name': f"{c.user.first_name} {c.user.last_name}",
             'text': c.text,
             'bid': c.bid.amount if c.bid else None,
-            'created_at': c.created_at
+            'created_at': c.created_at,
+            'parent': c.parent_id
         } for c in comments]
 
 
@@ -136,6 +139,9 @@ class MyLotSerializer(serializers.Serializer):
     )
 
     soundcloud_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
+    facebook_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
+    instagram_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
+
     description = serializers.CharField(allow_blank=True, required=False)
 
     def to_representation(self, instance):
@@ -151,6 +157,9 @@ class MyLotSerializer(serializers.Serializer):
         representation['last_name'] = instance.last_name
 
         representation['soundcloud_url'] = instance.user.soundcloud
+        representation['facebook_url'] = instance.user.facebook
+        representation['instagram_url'] = instance.user.instagram
+
         representation['description'] = instance.description
 
         return representation
@@ -191,9 +200,12 @@ class MyLotSerializer(serializers.Serializer):
             'role': validated_data.pop('role', user.role),
         }
 
-        soundcloud = validated_data.pop('soundcloud_url', None)
-        if soundcloud is not None:
-            user.soundcloud = soundcloud
+        if 'soundcloud_url' in validated_data:
+            user.soundcloud = validated_data.pop('soundcloud_url')
+        if 'facebook_url' in validated_data:
+            user.facebook = validated_data.pop('facebook_url')
+        if 'instagram_url' in validated_data:
+            user.instagram = validated_data.pop('instagram_url')
 
         for field, value in user_fields.items():
             if value is not None:
@@ -225,6 +237,10 @@ class MyLotSerializer(serializers.Serializer):
 
         if 'soundcloud_url' in validated_data:
             user.soundcloud = validated_data.pop('soundcloud_url')
+        if 'facebook_url' in validated_data:
+            user.facebook = validated_data.pop('facebook_url')
+        if 'instagram_url' in validated_data:
+            user.instagram = validated_data.pop('instagram_url')
 
         user.save()
 
