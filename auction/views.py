@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.http import Http404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from auction.models import Lot, Complaints, Faculty, Major, Role, Bid
+from auction.models import Lot, Complaints, Faculty, Major, Role, Bid, Comment
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, \
     FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
 from notifications.services import notification_service
@@ -81,11 +81,68 @@ class MyLot(NotBannedMixin, APIView):
         if not my_lot:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = LotSerializer(my_lot)
-        return Response(serializer.data)
+        serializer = MyLotSerializer(my_lot, context={'request': request})
+        data = serializer.data
+
+        lot_serializer = LotSerializer(my_lot, context={'request': request})
+        data['comments'] = lot_serializer.data.get('comments', [])
+        return Response(data)
 
     def post(self, request):
         user = request.user
+
+        text = request.data.get('text')
+        parent_id = request.data.get('parent')
+
+        if text is not None or parent_id is not None:
+            my_lot = Lot.objects.filter(user=user).first()
+
+            if not my_lot:
+                return Response(
+                    {"detail": "у вас немає лоту."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if not text:
+                return Response(
+                    {"detail": "текст обов'язковий."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            actual_parent_id = None
+            if parent_id:
+                try:
+                    parent_comment = Comment.objects.get(id=parent_id, lot=my_lot)
+                    if parent_comment.parent_id is not None:
+                        actual_parent_id = parent_comment.parent_id
+                        replied_to_user = parent_comment.user
+                        text = f"@{replied_to_user.first_name} {replied_to_user.last_name}: {text}"
+                    else:
+                        actual_parent_id = parent_id
+                except Comment.DoesNotExist:
+                    return Response(
+                        {"detail": "коментар не знайдено."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+
+            comment_data = {
+                "user": user.id,
+                "lot": my_lot.id,
+                "text": text,
+            }
+
+            if actual_parent_id:
+                comment_data["parent"] = actual_parent_id
+
+            comment_serializer = CommentSerializer(data=comment_data)
+            comment_serializer.is_valid(raise_exception=True)
+            comment_serializer.save()
+
+            return Response(
+                {"detail": "коментар успішно додано."},
+                status=status.HTTP_201_CREATED
+            )
+
         if Lot.objects.filter(user=user).exists():
             return Response({"detail": "ви можете створити лише 1 лот."},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -184,6 +241,45 @@ class LotDetail(NotBannedMixin, APIView):
 
         amount = request.data.get('amount')
         text = request.data.get('text')
+        parent_id = request.data.get('parent')
+
+        if parent_id:
+            try:
+                parent_comment = Comment.objects.get(id=parent_id, lot=lot)
+
+                if parent_comment.parent_id is not None:
+                    actual_parent_id = parent_comment.parent_id
+                    replied_to_user = parent_comment.user
+                    text = f"@{replied_to_user.first_name} {replied_to_user.last_name}: {text}"
+                else:
+                    actual_parent_id = parent_id
+
+            except Comment.DoesNotExist:
+                return Response(
+                    {"detail": "коментар для відповіді не знайдено."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if amount:
+                return Response(
+                    {"detail": "не можна залишати ставку у відповіді на коментар."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            comment_data = {
+                "user": user.id,
+                "lot": lot.id,
+                "text": text,
+                "parent": actual_parent_id
+            }
+            comment_serializer = CommentSerializer(data=comment_data)
+            comment_serializer.is_valid(raise_exception=True)
+            comment_serializer.save()
+
+            return Response(
+                {"detail": "відповідь успішно додано."},
+                status=status.HTTP_201_CREATED
+            )
 
         # for discord
         previous_bid = Bid.objects.filter(lot=lot).order_by('-amount').first()
@@ -207,7 +303,6 @@ class LotDetail(NotBannedMixin, APIView):
             if previous_bid:
                 notification_service.notify_bid_overbid_sync(previous_bid=previous_bid, new_bid=bid, lot=lot)
 
-            if text:
                 comment_data = {
                     "user": user.id,
                     "lot": lot.id,
@@ -234,7 +329,7 @@ class LotDetail(NotBannedMixin, APIView):
             )
 
         return Response(
-            {"detail": "напишіть текст або кількість."},
+            {"detail": "напишіть текст або вкажіть ставку."},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -328,7 +423,15 @@ class MyBids(NotBannedMixin, APIView):
     def get(self, request):
         status_filter = request.query_params.get("status")
 
-        bids = Bid.objects.filter(user=request.user).select_related('lot', 'lot__user')
+        latest_bids_subquery = Bid.objects.filter(
+            user=request.user
+        ).values('lot').annotate(
+            max_id=Max('id')
+        ).values('max_id')
+
+        bids = Bid.objects.filter(
+            id__in=latest_bids_subquery
+        ).select_related('lot', 'lot__user').order_by('-created_at')
 
         if status_filter == "overbid":
             bids = bids.filter(is_overbid=True)
