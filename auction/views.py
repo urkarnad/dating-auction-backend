@@ -9,6 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from auction.models import Lot, Complaints, Faculty, Major, Role, Bid, Comment
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, \
     FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
+from notifications.services import notification_service
 from user.models import UserPhotos
 from user.serializers import CustomUserSerializer
 from user.permissions import NotBanned
@@ -280,27 +281,37 @@ class LotDetail(NotBannedMixin, APIView):
                 status=status.HTTP_201_CREATED
             )
 
+        # for discord
+        previous_bid = Bid.objects.filter(lot=lot).order_by('-amount').first()
+
         if amount:
             bid_data = {"user": user.id, "lot": lot.id, "amount": amount}
             bid_serializer = BidSerializer(data=bid_data)
             bid_serializer.is_valid(raise_exception=True)
             bid = bid_serializer.save()
 
+            # for discord
+            bid.is_overbid = False
+            bid.save(update_fields=['is_overbid'])
+
             Bid.objects.filter(lot=lot, is_overbid=False).exclude(id=bid.id).update(is_overbid=True)
 
             lot.last_bet = bid.amount
             lot.save(update_fields=["last_bet"])
 
-            comment_data = {
-                "user": user.id,
-                "lot": lot.id,
-                "text": text,
-                "bid": bid.id
-            }
-            comment_serializer = CommentSerializer(data=comment_data)
-            comment_serializer.is_valid(raise_exception=True)
-            comment_serializer.save()
+            # send notification
+            if previous_bid:
+                notification_service.notify_bid_overbid_sync(previous_bid=previous_bid, new_bid=bid, lot=lot)
 
+                comment_data = {
+                    "user": user.id,
+                    "lot": lot.id,
+                    "text": text,
+                    "bid": bid.id
+                }
+                comment_serializer = CommentSerializer(data=comment_data)
+                comment_serializer.is_valid(raise_exception=True)
+                comment_serializer.save()
             return Response(
                 {"detail": "ставку успішно додано."},
                 status=status.HTTP_201_CREATED
