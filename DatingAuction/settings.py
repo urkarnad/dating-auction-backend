@@ -215,3 +215,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
 }
+
+DISCORD_BOT_URL = os.getenv('DISCORD_BOT_URL', default='http://localhost:5005')
+DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
