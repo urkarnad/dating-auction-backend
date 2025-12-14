@@ -9,6 +9,7 @@ urlpatterns = [
     path('lots/<int:pk>/', views.LotDetail.as_view(), name='lot_detail'),
     path('contacts/', views.Feedback.as_view(), name='feedback'),
     path('profile/', views.Profile.as_view(), name='profile'),
+    path('profile/upload-photo/', views.UploadProfilePhoto.as_view(), name='upload_profile_photo'),
     path('rules/', views.Rules.as_view(), name='rules'),
     path('complaints/', views.ComplaintsList.as_view(), name='complaints'),
     path('complaints/<int:pk>/', views.ComplaintDetail.as_view(), name='complaint'),

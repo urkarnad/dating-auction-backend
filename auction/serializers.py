@@ -69,6 +69,7 @@ class LotSerializer(serializers.ModelSerializer):
     instagram_url = serializers.URLField(source='user.instagram', read_only=True, allow_null=True)
 
     photos = serializers.SerializerMethodField()
+    main_photo = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     lot_number = serializers.IntegerField(source='id', read_only=True)
 
@@ -77,7 +78,7 @@ class LotSerializer(serializers.ModelSerializer):
         fields = [
             "id", "lot_number", "user", "created_at", "description", "last_bet",
             "first_name", "last_name", "faculty", "major", "year", "gender",
-            "role", "soundcloud_url", "facebook_url", "instagram_url", "photos", "comments"
+            "role", "soundcloud_url", "facebook_url", "instagram_url", "photos", "main_photo", "comments"
         ]
         read_only_fields = ["created_at", "user"]
 
@@ -94,16 +95,42 @@ class LotSerializer(serializers.ModelSerializer):
             return [request.build_absolute_uri(photo.photo.url) for photo in photos]
         return [photo.photo.url for photo in photos]
 
+    def get_main_photo(self, obj):
+        request = self.context.get('request')
+        first_photo = UserPhotos.objects.filter(user=obj.user).order_by('created_at').first()
+
+        if first_photo:
+            if request:
+                return request.build_absolute_uri(first_photo.photo.url)
+            return first_photo.photo.url
+
+        return None
+
     def get_comments(self, obj):
-        comments = Comment.objects.filter(lot=obj).order_by('created_at')
-        return [{
-            'id': c.id,
-            'user_name': f"{c.user.first_name} {c.user.last_name}",
-            'text': c.text,
-            'bid': c.bid.amount if c.bid else None,
-            'created_at': c.created_at,
-            'parent': c.parent_id
-        } for c in comments]
+        request = self.context.get('request')
+        comments = Comment.objects.filter(lot=obj).select_related('user').order_by('created_at')
+
+        result = []
+        for c in comments:
+            comment_data = {
+                'id': c.id,
+                'user_name': f"{c.user.first_name} {c.user.last_name}",
+                'text': c.text,
+                'bid': c.bid.amount if c.bid else None,
+                'created_at': c.created_at,
+                'parent': c.parent_id,
+                'user_avatar': None
+            }
+
+            if c.user.profile_pic:
+                if request:
+                    comment_data['user_avatar'] = request.build_absolute_uri(c.user.profile_pic.url)
+                else:
+                    comment_data['user_avatar'] = c.user.profile_pic.url
+
+            result.append(comment_data)
+
+        return result
 
 
 class MyLotSerializer(serializers.Serializer):
@@ -111,6 +138,8 @@ class MyLotSerializer(serializers.Serializer):
     lot_number = serializers.IntegerField(source='id', read_only=True)
     last_bet = serializers.IntegerField(read_only=True)
     photos = serializers.SerializerMethodField(read_only=True)
+    photos_count = serializers.SerializerMethodField(read_only=True)
+    can_upload_more = serializers.SerializerMethodField(read_only=True)
 
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
@@ -166,10 +195,23 @@ class MyLotSerializer(serializers.Serializer):
 
     def get_photos(self, obj):
         request = self.context.get('request')
-        photos = UserPhotos.objects.filter(user=obj.user)
-        if request:
-            return [request.build_absolute_uri(photo.photo.url) for photo in photos]
-        return [photo.photo.url for photo in photos]
+        photos = UserPhotos.objects.filter(user=obj.user).order_by('created_at')
+
+        result = []
+        for photo in photos:
+            url = request.build_absolute_uri(photo.photo.url) if request else photo.photo.url
+            result.append({
+                'id': photo.id,
+                'url': url
+            })
+        return result
+
+    def get_photos_count(self, obj):
+        return UserPhotos.objects.filter(user=obj.user).count()
+
+    def get_can_upload_more(self, obj):
+        count = UserPhotos.objects.filter(user=obj.user).count()
+        return count < 5
 
     def validate(self, attrs):
         faculty = attrs.get('faculty')

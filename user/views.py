@@ -58,6 +58,7 @@ def logout_view(request):
         'redirect_url': f'{settings.FRONTEND_URL}/login'
     }, status=200)
 
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 

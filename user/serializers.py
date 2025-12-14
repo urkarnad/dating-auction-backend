@@ -23,6 +23,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
     major = serializers.PrimaryKeyRelatedField(queryset=Major.objects.all(), allow_null=True, required=False)
     year = serializers.PrimaryKeyRelatedField(queryset=Year.objects.all(), allow_null=True, required=False)
 
+    profile_pic = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = CustomUser
         fields = [
@@ -31,9 +33,17 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "role", "gender", "faculty", "major", "year",
             "created_at", "updated_at",
             "profile_pic",
-            "facebook", "instagram", "discord_id", "soundcloud",
+            "facebook", "instagram", "discord_id", "soundcloud"
         ]
         read_only_fields = ["created_at", "updated_at"]
+
+    def get_profile_pic(self, obj):
+        if obj.profile_pic:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_pic.url)
+            return obj.profile_pic.url
+        return None
 
     def validate_first_name(self, value):
         v = (value or "").strip()
@@ -55,6 +65,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         if major and faculty and major.faculty_id != faculty.id:
             raise serializers.ValidationError("Selected major does not belong to the chosen faculty.")
         return attrs
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
