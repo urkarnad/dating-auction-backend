@@ -204,23 +204,103 @@ class UploadLotPhoto(NotBannedMixin, APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        current_photos_count = UserPhotos.objects.filter(user=user).count()
+
+        photos = request.FILES.getlist('photo')
+
+        if not photos:
+            return Response(
+                {"detail": "фото не надано."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if current_photos_count + len(photos) > 5:
+            return Response(
+                {"detail": f"Максимум 5 фото. У вас вже {current_photos_count} фото."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uploaded_urls = []
+        for photo in photos:
+            user_photo = UserPhotos.objects.create(user=user, photo=photo)
+            uploaded_urls.append(request.build_absolute_uri(user_photo.photo.url))
+
+        return Response(
+            {
+                "detail": f"успішно завантажено {len(photos)} фото.",
+                "photos": uploaded_urls,
+                "total_photos": current_photos_count + len(photos)
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    def delete(self, request):
+        """Видалення конкретного фото"""
+        user = request.user
+        photo_id = request.data.get('photo_id')
+
+        if not photo_id:
+            return Response(
+                {"detail": "вкажіть photo_id для видалення."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            photo = UserPhotos.objects.get(id=photo_id, user=user)
+            photo.delete()
+            return Response(
+                {"detail": "фото успішно видалено."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except UserPhotos.DoesNotExist:
+            return Response(
+                {"detail": "фото не знайдено."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class UploadProfilePhoto(NotBannedMixin, APIView):
+    def post(self, request):
+        user = request.user
         photo = request.FILES.get('photo')
+
         if not photo:
             return Response(
                 {"detail": "фото не надано."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user_photo = UserPhotos.objects.create(user=user, photo=photo)
+        if user.profile_pic:
+            user.profile_pic.delete(save=False)
+
+        user.profile_pic = photo
+        user.save()
 
         return Response(
             {
-                "detail": "фото успішно завантажено.",
-                "photo_url": request.build_absolute_uri(user_photo.photo.url)
+                "detail": "аватарка успішно оновлена.",
+                "photo_url": request.build_absolute_uri(user.profile_pic.url)
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_200_OK
         )
 
+    def delete(self, request):
+        user = request.user
+
+        if not user.profile_pic:
+            return Response(
+                {"detail": "у вас немає аватарки."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.profile_pic.delete(save=False)
+        user.profile_pic = None
+        user.save()
+
+        return Response(
+            {"detail": "аватарка успішно видалена."},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 class LotDetail(NotBannedMixin, APIView):
     def get_object(self, pk):
