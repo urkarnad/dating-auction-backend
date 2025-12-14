@@ -65,7 +65,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'first_name', 'last_name', 'password', 'confirm_password']
+        fields = '__all__'
 
     def validate_email(self, value):
         if not value.endswith("@ukma.edu.ua"):
@@ -83,12 +83,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         password = validated_data.pop('password')
-        user, created = CustomUser.objects.get_or_create(email=validated_data['email'],
-                                                         defaults={
-                                                             'first_name': validated_data['first_name'],
-                                                             'last_name': validated_data['last_name'],
-                                                             'email': validated_data['email'],
-                                                         })
+
+        user = CustomUser(**validated_data)
         user.set_password(password)
         user.save()
         return user

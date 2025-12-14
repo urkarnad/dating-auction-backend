@@ -21,6 +21,10 @@ class NotificationChannel(ABC):
     def is_enabled_for_user(self, user) -> bool:
         pass
 
+    @abstractmethod
+    def get_recipient_id(self, user) -> Optional[str]:
+        pass
+
 
 class DiscordChannel(NotificationChannel):
     def __init__(self):
@@ -43,7 +47,7 @@ class DiscordChannel(NotificationChannel):
                         logger.info(f'Sent notification to {recipient}')
                         return True
                     else:
-                        logger.error(f'Failed to send notification to {recipient}')
+                        logger.warning(f'Failed to send notification to {recipient}')
                         return False
 
         except aiohttp.ClientConnectionError:
