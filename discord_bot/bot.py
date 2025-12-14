@@ -44,7 +44,6 @@ async def send_notification(discord_id: str, message: str, lot_id: int = None):
             colour=discord.Colour.orange()
         )
 
-        # to get to the lot ??????
         if lot_id:
             site_url = os.getenv('SITE_URL', 'http://localhost:3000')
             embed.add_field(
