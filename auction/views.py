@@ -30,7 +30,7 @@ class LotPagination(PageNumberPagination):
 
 class HomePage(APIView):
     def get(self, request):
-        lots = Lot.objects.all()
+        lots = Lot.objects.all().order_by("-created_at")
 
         search_query = request.query_params.get('search')
         if search_query:
