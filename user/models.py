@@ -63,7 +63,9 @@ class CustomUser(AbstractUser):
 
     is_banned = models.BooleanField(default=False)
 
-    profile_pic = models.ImageField(upload_to='profile_pic/', null=True, blank=True)
+    profile_pic = models.ImageField(
+        storage=MediaCloudinaryStorage(), upload_to='profile_pic/', null=True, blank=True
+    )
 
     facebook = models.URLField(null=True, blank=True)
     instagram = models.URLField(null=True, blank=True)

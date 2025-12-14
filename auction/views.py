@@ -25,7 +25,7 @@ class NotBannedMixin:
 class LotPagination(PageNumberPagination):
     page_size = 12                       
     page_size_query_param = "page_size"  
-    max_page_size = 100
+    max_page_size = 100  
 
 
 class HomePage(APIView):
@@ -193,6 +193,7 @@ class MyLot(NotBannedMixin, APIView):
 
 
 class UploadLotPhoto(NotBannedMixin, APIView):
+    # permission_classes = [IsAuthenticated], це перекриває Mixin
 
     def post(self, request):
         user = request.user
@@ -302,6 +303,7 @@ class UploadProfilePhoto(NotBannedMixin, APIView):
             status=status.HTTP_204_NO_CONTENT
         )
 
+
 class LotDetail(NotBannedMixin, APIView):
     def get_object(self, pk):
         try:
@@ -382,6 +384,7 @@ class LotDetail(NotBannedMixin, APIView):
             if previous_bid:
                 notification_service.notify_bid_overbid_sync(previous_bid=previous_bid, new_bid=bid, lot=lot)
 
+            if text:
                 comment_data = {
                     "user": user.id,
                     "lot": lot.id,
@@ -434,15 +437,15 @@ class Feedback(NotBannedMixin, APIView):
 
 
 class Profile(NotBannedMixin, APIView):
-
     def get(self, request):
-        serializer = CustomUserSerializer(request.user)
+        serializer = CustomUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request):
         serializer = CustomUserSerializer(
             request.user,
-            data=request.data
+            data=request.data,
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -452,7 +455,8 @@ class Profile(NotBannedMixin, APIView):
         serializer = CustomUserSerializer(
             request.user,
             data=request.data,
-            partial=True
+            partial=True,
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -496,6 +500,7 @@ class ComplaintDetail(NotBannedMixin, APIView):
 
 
 class MyBids(NotBannedMixin, APIView):
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         status_filter = request.query_params.get("status")

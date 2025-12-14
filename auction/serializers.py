@@ -107,15 +107,30 @@ class LotSerializer(serializers.ModelSerializer):
         return None
 
     def get_comments(self, obj):
-        comments = Comment.objects.filter(lot=obj).order_by('created_at')
-        return [{
-            'id': c.id,
-            'user_name': f"{c.user.first_name} {c.user.last_name}",
-            'text': c.text,
-            'bid': c.bid.amount if c.bid else None,
-            'created_at': c.created_at,
-            'parent': c.parent_id
-        } for c in comments]
+        request = self.context.get('request')
+        comments = Comment.objects.filter(lot=obj).select_related('user').order_by('created_at')
+
+        result = []
+        for c in comments:
+            comment_data = {
+                'id': c.id,
+                'user_name': f"{c.user.first_name} {c.user.last_name}",
+                'text': c.text,
+                'bid': c.bid.amount if c.bid else None,
+                'created_at': c.created_at,
+                'parent': c.parent_id,
+                'user_avatar': None
+            }
+
+            if c.user.profile_pic:
+                if request:
+                    comment_data['user_avatar'] = request.build_absolute_uri(c.user.profile_pic.url)
+                else:
+                    comment_data['user_avatar'] = c.user.profile_pic.url
+
+            result.append(comment_data)
+
+        return result
 
 
 class MyLotSerializer(serializers.Serializer):
@@ -180,10 +195,16 @@ class MyLotSerializer(serializers.Serializer):
 
     def get_photos(self, obj):
         request = self.context.get('request')
-        photos = UserPhotos.objects.filter(user=obj.user)
-        if request:
-            return [request.build_absolute_uri(photo.photo.url) for photo in photos]
-        return [photo.photo.url for photo in photos]
+        photos = UserPhotos.objects.filter(user=obj.user).order_by('created_at')
+
+        result = []
+        for photo in photos:
+            url = request.build_absolute_uri(photo.photo.url) if request else photo.photo.url
+            result.append({
+                'id': photo.id,
+                'url': url
+            })
+        return result
 
     def get_photos_count(self, obj):
         return UserPhotos.objects.filter(user=obj.user).count()
