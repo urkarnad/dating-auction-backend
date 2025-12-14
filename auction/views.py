@@ -193,7 +193,6 @@ class MyLot(NotBannedMixin, APIView):
 
 
 class UploadLotPhoto(NotBannedMixin, APIView):
-    # permission_classes = [IsAuthenticated], це перекриває Mixin
 
     def post(self, request):
         user = request.user
@@ -355,7 +354,6 @@ class Feedback(NotBannedMixin, APIView):
 
 
 class Profile(NotBannedMixin, APIView):
-    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
@@ -418,7 +416,6 @@ class ComplaintDetail(NotBannedMixin, APIView):
 
 
 class MyBids(NotBannedMixin, APIView):
-    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         status_filter = request.query_params.get("status")

@@ -10,7 +10,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from DatingAuction import settings
 import logging
 
-from user.models import CustomUser
 from user.serializers import RegisterSerializer, CustomUserSerializer, LoginSerializer
 
 logger = logging.getLogger(__name__)
@@ -58,7 +57,6 @@ def logout_view(request):
         'message': 'Successfully logged out',
         'redirect_url': f'{settings.FRONTEND_URL}/login'
     }, status=200)
-    #return redirect(f'{settings.FRONTEND_URL}/login') # Where redirect
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]

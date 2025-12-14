@@ -75,7 +75,7 @@ class NotificationService:
         ]
 
     async def notify_bid_overbid(self, previous_bid, new_bid, lot) -> bool:
-        # Wrap Django ORM access in sync_to_async
+        # wrap django ORM access in sync_to_async
         previous_bidder = await sync_to_async(lambda: previous_bid.user)()
         enabled_channels = self.get_enabled_channels(previous_bidder)
 
@@ -104,7 +104,7 @@ class NotificationService:
         return success
 
     async def _format_overbid_message(self, previous_bid, new_bid, lot) -> str:
-        # Wrap all Django ORM access
+        # wrap all django ORM access
         prev_amount = await sync_to_async(lambda: previous_bid.amount)()
         new_amount = await sync_to_async(lambda: new_bid.amount)()
         new_bidder_first_name = await sync_to_async(lambda: new_bid.user.first_name)()
@@ -129,7 +129,6 @@ class NotificationService:
     def notify_bid_overbid_sync(self, previous_bid, new_bid, lot) -> bool:
         import asyncio
 
-        # Create new event loop for this thread
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
