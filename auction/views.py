@@ -6,9 +6,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
-from auction.models import Lot, Complaints, Faculty, Major, Role, Bid, Comment
+from auction.models import Lot, Complaints, Faculty, Major, Role, Bid, Comment, Themes
 from auction.serializers import LotSerializer, BidSerializer, CommentSerializer, ComplaintsSerializer, \
-    FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer
+    FacultySerializer, MajorSerializer, RoleSerializer, MyLotSerializer, ThemesSerializer
 from notifications.services import notification_service
 from user.models import UserPhotos
 from user.serializers import CustomUserSerializer
@@ -384,16 +384,18 @@ class LotDetail(NotBannedMixin, APIView):
             if previous_bid:
                 notification_service.notify_bid_overbid_sync(previous_bid=previous_bid, new_bid=bid, lot=lot)
 
+            comment_data = {
+                "user": user.id,
+                "lot": lot.id,
+                "bid": bid.id
+            }
+
             if text:
-                comment_data = {
-                    "user": user.id,
-                    "lot": lot.id,
-                    "text": text,
-                    "bid": bid.id
-                }
-                comment_serializer = CommentSerializer(data=comment_data)
-                comment_serializer.is_valid(raise_exception=True)
-                comment_serializer.save()
+                comment_data["text"] = text
+
+            comment_serializer = CommentSerializer(data=comment_data)
+            comment_serializer.is_valid(raise_exception=True)
+            comment_serializer.save()
             return Response(
                 {"detail": "ставку успішно додано."},
                 status=status.HTTP_201_CREATED
@@ -482,6 +484,13 @@ class ComplaintsList(APIView):
 
         complaints = Complaints.objects.all()
         serializer = ComplaintsSerializer(complaints, many=True)
+        return Response(serializer.data)
+
+
+class ThemesList(APIView):
+    def get(self, request):
+        themes = Themes.objects.all()
+        serializer = ThemesSerializer(themes, many=True)
         return Response(serializer.data)
 
 

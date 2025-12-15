@@ -12,6 +12,7 @@ urlpatterns = [
     path('profile/upload-photo/', views.UploadProfilePhoto.as_view(), name='upload_profile_photo'),
     path('rules/', views.Rules.as_view(), name='rules'),
     path('complaints/', views.ComplaintsList.as_view(), name='complaints'),
+    path('complaint-themes/', views.ThemesList.as_view(), name='themes_list'),
     path('complaints/<int:pk>/', views.ComplaintDetail.as_view(), name='complaint'),
     path('mybids/', views.MyBids.as_view(), name='my_bids'),
     path('faculties/', views.FacultyList.as_view(), name='faculty-list'),
